@@ -7,86 +7,117 @@
   <title>Visualizador OFX</title>
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- jQuery -->
+  <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 </head>
 
 <body>
 
-  <div class="container mt-5">
+  <div class="container mt-5 mb-5">
     <h2>Visualizador de Dados OFX</h2>
     <input type="file" id="ofxFile" class="form-control mb-3" accept=".ofx">
-    <button class="btn btn-primary" onclick="handleFile()">Importar</button>
-    <table class="table table-bordered mt-3">
-      <thead>
-        <tr>
-          <th>Data</th>
-          <th>Entrada</th>
-          <th>Saída</th>
-          <th>Descrição</th>
-        </tr>
-      </thead>
-      <tbody id="ofxTableBody">
-        <!-- As linhas da tabela serão adicionadas dinamicamente aqui -->
-      </tbody>
-    </table>
+    <button class="btn btn-primary" id="importarBtn">Importar</button>
+
+    <form action="#" method="post">
+      <table class="table table-bordered mt-3">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Entrada</th>
+            <th>Saída</th>
+            <th>Descrição</th>
+            <th>Forma de Pagamento</th>
+          </tr>
+        </thead>
+        <tbody id="ofxTableBody">
+          <!-- As linhas da tabela serão adicionadas dinamicamente aqui -->
+        </tbody>
+      </table>
+
+      <button type="submit" class="btn btn-success btn_enviar" style="display: none;">
+        Enviar informações
+      </button>
+    </form>
   </div>
 
   <script>
-    function handleFile() {
-      const fileInput = document.getElementById("ofxFile");
-      const file = fileInput.files[0];
+    $(document).ready(function () {
+      $("#importarBtn").click(function () {
+        const fileInput = $("#ofxFile")[0];
+        const file = fileInput.files[0];
 
-      if (file) {
-        const reader = new FileReader();
+        if (file) {
+          const reader = new FileReader();
 
-        reader.onload = function (e) {
-          const ofxData = e.target.result;
-          parseAndDisplay(ofxData);
-        };
+          reader.onload = function (e) {
+            const ofxData = e.target.result;
+            parseAndDisplay(ofxData);
+            $(".btn_enviar").show();
+          };
 
-        reader.readAsText(file);
-      } else {
-        alert("Selecione um arquivo OFX válido.");
-      }
-    }
-
-    function parseAndDisplay(ofxData) {
-      // Usar expressões regulares para extrair transações dos dados OFX
-      const transactions = ofxData.match(/<STMTTRN>[\s\S]*?<\/STMTTRN>/g);
-
-      const tableBody = document.getElementById("ofxTableBody");
-      tableBody.innerHTML = ""; // Limpar linhas existentes
-
-      transactions.forEach(function (transaction) {
-        const rawDate = transaction.match(/<DTPOSTED>(.*?)<\/DTPOSTED>/)[1];
-        const formattedDate = formatDate(rawDate);
-        const type = transaction.match(/<TRNTYPE>(.*?)<\/TRNTYPE>/)[1];
-        const amount = parseFloat(transaction.match(/<TRNAMT>(.*?)<\/TRNAMT>/)[1]).toFixed(2);
-        const memo = transaction.match(/<MEMO>(.*?)<\/MEMO>/)[1];
-
-        const entry = type === 'CREDIT' ? amount : '';
-        const exit = type === 'DEBIT' ? amount : '';
-
-        const row = `<tr>
-          <td>${formattedDate}</td>
-          <td>${entry}</td>
-          <td>${exit}</td>
-          <td>${memo}</td>
-        </tr>`;
-
-        tableBody.innerHTML += row;
+          reader.readAsText(file);
+        } else {
+          alert("Selecione um arquivo OFX válido.");
+        }
       });
-    }
 
-    function formatDate(rawDate) {
-      // Converter formato de data bruto para o formato desejado
-      const year = rawDate.substr(0, 4);
-      const month = rawDate.substr(4, 2);
-      const day = rawDate.substr(6, 2);
-      const hours = rawDate.substr(8, 2);
-      const minutes = rawDate.substr(10, 2);
+      function parseAndDisplay(ofxData) {
+        // Usar expressões regulares para extrair transações dos dados OFX
+        const transactions = ofxData.match(/<STMTTRN>[\s\S]*?<\/STMTTRN>/g);
 
-      return `${day}/${month}/${year} ${hours}:${minutes}`;
-    }
+        const tableBody = $("#ofxTableBody");
+        tableBody.empty(); // Limpar linhas existentes
+
+        transactions.forEach(function (transaction) {
+          const rawDate = transaction.match(/<DTPOSTED>(.*?)<\/DTPOSTED>/)[1];
+          const formattedDate = formatDate(rawDate);
+          const type = transaction.match(/<TRNTYPE>(.*?)<\/TRNTYPE>/)[1];
+          const amount = parseFloat(transaction.match(/<TRNAMT>(.*?)<\/TRNAMT>/)[1]).toFixed(2);
+          const formattedAmount = formatCurrency(amount);
+          const memo = transaction.match(/<MEMO>(.*?)<\/MEMO>/)[1];
+
+          const entry = type === 'CREDIT' ? formattedAmount : '';
+          const exit = type === 'DEBIT' ? formattedAmount : '';
+
+          const descriptionInput = `<input type="text" class="form-control" value="${memo}">`;
+          const paymentMethodSelect =
+            `<select class="form-control" required>
+              <option value="">Selecione</option>
+              <option value="credit">Crédito</option>
+              <option value="debit">Débito</option>
+              <option value="money">Dinheiro</option>
+              <option value="pix">PIX</option>
+            </select>`;
+
+          const row = `
+          <tr>
+            <td>${formattedDate}</td>
+            <td>${entry}</td>
+            <td>${exit}</td>
+            <td>${descriptionInput}</td>
+            <td>${paymentMethodSelect}</td>
+          </tr>`;
+
+          tableBody.append(row);
+        });
+      }
+
+      function formatDate(rawDate) {
+        // Converter formato de data bruto para o formato desejado
+        const year = rawDate.substr(0, 4);
+        const month = rawDate.substr(4, 2);
+        const day = rawDate.substr(6, 2);
+        const hours = rawDate.substr(8, 2);
+        const minutes = rawDate.substr(10, 2);
+
+        return `${day}/${month}/${year} ${hours}:${minutes}`;
+      }
+
+      function formatCurrency(value) {
+        // Formatar o valor como moeda brasileira (R$)
+        return parseFloat(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      }
+    });
   </script>
 
   <!-- Bootstrap JS (opcional) -->
