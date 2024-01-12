@@ -34,7 +34,7 @@
         </tbody>
       </table>
 
-      <button type="submit" class="btn btn-success btn_enviar" style="display: none;">
+      <button type="submit" class="btn btn-info btn_enviar" style="display: none;">
         Enviar informações
       </button>
     </form>
@@ -82,6 +82,8 @@
           const entry = type === 'CREDIT' ? formattedAmount + inputEntry : '';
           const exit = type === 'DEBIT' ? formattedAmount + inputExit : '';
 
+          const classType = type === 'DEBIT' ? 'bg-danger' : 'bg-success ';
+
           const descriptionInput = `<input type="text" name="description[]" class="form-control" value="${memo}">`;
           const dateInput = `<input type="hidden" name="date[]" value="${rawDate}">`;
 
@@ -95,7 +97,7 @@
             </select>`;
 
           const row = `
-            <tr>
+            <tr class="${classType} bg-gradient text-white bg-opacity-75" >
               <td>${dateInput} ${formattedDate}</td>
               <td>${entry}</td>
               <td>${exit}</td>
