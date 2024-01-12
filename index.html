@@ -76,10 +76,15 @@
           const formattedAmount = formatCurrency(amount);
           const memo = transaction.match(/<MEMO>(.*?)<\/MEMO>/)[1];
 
-          const entry = type === 'CREDIT' ? formattedAmount : '';
-          const exit = type === 'DEBIT' ? formattedAmount : '';
+          const inputEntry = `<input type="hidden" name="entry[]" value="${amount}">`;
+          const inputExit = `<input type="hidden" name="exit[]" value="${amount}">`;
 
-          const descriptionInput = `<input type="text" class="form-control" value="${memo}">`;
+          const entry = type === 'CREDIT' ? formattedAmount + inputEntry : '';
+          const exit = type === 'DEBIT' ? formattedAmount + inputExit : '';
+
+          const descriptionInput = `<input type="text" name="description[]" class="form-control" value="${memo}">`;
+          const dateInput = `<input type="hidden" name="date[]" value="${rawDate}">`;
+
           const paymentMethodSelect =
             `<select class="form-control" required>
               <option value="">Selecione</option>
@@ -90,13 +95,13 @@
             </select>`;
 
           const row = `
-          <tr>
-            <td>${formattedDate}</td>
-            <td>${entry}</td>
-            <td>${exit}</td>
-            <td>${descriptionInput}</td>
-            <td>${paymentMethodSelect}</td>
-          </tr>`;
+            <tr>
+              <td>${dateInput} ${formattedDate}</td>
+              <td>${entry}</td>
+              <td>${exit}</td>
+              <td>${descriptionInput}</td>
+              <td>${paymentMethodSelect}</td>
+            </tr>`;
 
           tableBody.append(row);
         });
