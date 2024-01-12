@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OFX Viewer</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body>
+
+  <div class="container mt-5">
+    <h2>OFX Data Viewer</h2>
+    <input type="file" id="ofxFile" class="form-control mb-3" accept=".ofx">
+    <button class="btn btn-primary" onclick="handleFile()">Importar</button>
+    <table class="table table-bordered mt-3">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Type</th>
+          <th>Amount</th>
+          <th>Memo</th>
+        </tr>
+      </thead>
+      <tbody id="ofxTableBody">
+        <!-- Table rows will be added dynamically here -->
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    function handleFile() {
+      const fileInput = document.getElementById("ofxFile");
+      const file = fileInput.files[0];
+
+      if (file) {
+        const reader = new FileReader();
+
+        reader.onload = function (e) {
+          const ofxData = e.target.result;
+          parseAndDisplay(ofxData);
+        };
+
+        reader.readAsText(file);
+      } else {
+        alert("Selecione um arquivo OFX válido.");
+      }
+    }
+
+    function parseAndDisplay(ofxData) {
+      // Use regular expressions to extract transactions from OFX data
+      const transactions = ofxData.match(/<STMTTRN>[\s\S]*?<\/STMTTRN>/g);
+
+      const tableBody = document.getElementById("ofxTableBody");
+      tableBody.innerHTML = ""; // Clear existing rows
+
+      transactions.forEach(function (transaction) {
+        const rawDate = transaction.match(/<DTPOSTED>(.*?)<\/DTPOSTED>/)[1];
+        const formattedDate = formatDate(rawDate);
+        const type = transaction.match(/<TRNTYPE>(.*?)<\/TRNTYPE>/)[1];
+        const amount = parseFloat(transaction.match(/<TRNAMT>(.*?)<\/TRNAMT>/)[1]).toFixed(2);
+        const memo = transaction.match(/<MEMO>(.*?)<\/MEMO>/)[1];
+
+        const row = `<tr>
+          <td>${formattedDate}</td>
+          <td>${type}</td>
+          <td>${amount}</td>
+          <td>${memo}</td>
+        </tr>`;
+
+        tableBody.innerHTML += row;
+      });
+    }
+
+    function formatDate(rawDate) {
+      // Convert raw date format to the desired format
+      const year = rawDate.substr(0, 4);
+      const month = rawDate.substr(4, 2);
+      const day = rawDate.substr(6, 2);
+      const hours = rawDate.substr(8, 2);
+      const minutes = rawDate.substr(10, 2);
+
+      return `${day}/${month}/${year} ${hours}:${minutes}`;
+    }
+  </script>
+
+  <!-- Bootstrap JS (optional) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
