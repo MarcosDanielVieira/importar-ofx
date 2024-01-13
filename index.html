@@ -19,7 +19,7 @@
     <button class="btn btn-primary" id="importarBtn">Importar</button>
 
     <div class="total" style="display: none;">
-      <div class="row mt-3 d-flex justify-content-center ">
+      <div class="row mt-3 d-flex justify-content-end ">
         <div class="col-md-2">
           <div class="p-2 border bg-light text-success rounded">
             <h6>Entrada</h6>
@@ -49,6 +49,26 @@
         <tbody id="ofxTableBody">
           <!-- As linhas da tabela serão adicionadas dinamicamente aqui -->
         </tbody>
+        <tfoot class="footer-table" style="display: none;">
+          <tr>
+            <td colspan="5" class="text-end">
+              <div class="row mt-3 d-flex justify-content-end">
+                <div class="col-md-2">
+                  <div class="p-2 border bg-light text-success rounded">
+                    <h6>Total Entrada</h6>
+                    <b class="totalEntry"> </b>
+                  </div>
+                </div>
+                <div class="col-md-2">
+                  <div class="p-2 border bg-light text-danger rounded">
+                    <h6>Total Saída</h6>
+                    <b class="totalExit"> </b>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tfoot>
       </table>
 
       <button type="submit" class="btn btn-info btn_enviar" style="display: none;">
@@ -136,8 +156,15 @@
 
           tableBody.append(row);
 
-          $(".total").show();
+          $(".total, .footer-table").show();
         });
+
+        // Verificar se há mais de 4 linhas na tabela antes de exibir o footer
+        if ($("#ofxTableBody tr").length > 4) {
+          $(".footer-table").show();
+        } else {
+          $(".footer-table").hide();
+        }
       }
 
       function updateTotals() {
