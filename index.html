@@ -18,26 +18,18 @@
     <input type="file" id="ofxFile" class="form-control mb-3" accept=".ofx">
     <button class="btn btn-primary" id="importarBtn">Importar</button>
 
-    <div class="total ">
+    <div class="total" style="display: none;">
       <div class="row mt-3 d-flex justify-content-center ">
         <div class="col-md-2">
           <div class="p-2 border bg-light text-success rounded">
-            <h6>
-              Entrada
-            </h6>
-            <b class="totalEntry">
-              R$ 13.586,69
-            </b>
+            <h6>Entrada</h6>
+            <b class="totalEntry"> </b>
           </div>
         </div>
         <div class="col-md-2">
           <div class="p-2 border bg-light text-danger rounded">
-            <h6>
-              Saída
-            </h6>
-            <b class="totalExit">
-              R$ 3.586,69
-            </b>
+            <h6>Saída</h6>
+            <b class="totalExit"> </b>
           </div>
         </div>
       </div>
@@ -67,6 +59,10 @@
 
   <script>
     $(document).ready(function () {
+      // Variáveis globais para os totais de entrada e saída
+      let totalEntry = 0;
+      let totalExit = 0;
+
       $("#importarBtn").click(function () {
         const fileInput = $("#ofxFile")[0];
         const file = fileInput.files[0];
@@ -77,6 +73,7 @@
           reader.onload = function (e) {
             const ofxData = e.target.result;
             parseAndDisplay(ofxData);
+            updateTotals(); // Atualizar totais após importar
             $(".btn_enviar").show();
           };
 
@@ -107,6 +104,13 @@
           const entry = type === 'CREDIT' ? formattedAmount + inputEntry : '';
           const exit = (type === 'DEBIT' || type === 'PAYMENT') ? formattedAmount + inputExit : '';
 
+          // Atualizar totais de entrada e saída
+          if (type === 'CREDIT') {
+            totalEntry += parseFloat(amount);
+          } else if (type === 'DEBIT' || type === 'PAYMENT') {
+            totalExit += parseFloat(amount);
+          }
+
           const classType = (type === 'DEBIT' || type === 'PAYMENT') ? 'bg-danger' : 'bg-success ';
 
           const descriptionInput = `<input type="text" name="description[]" class="form-control" value="${memo}">`;
@@ -122,16 +126,24 @@
             </select>`;
 
           const row = `
-            <tr class="${classType} bg-gradient text-white bg-opacity-75" >
-              <td>${dateInput} ${formattedDate}</td>
-              <td>${entry}</td>
-              <td>${exit}</td>
-              <td>${descriptionInput}</td>
-              <td>${paymentMethodSelect}</td>
-            </tr>`;
+          <tr class="${classType} bg-gradient text-white bg-opacity-75" >
+            <td>${dateInput} ${formattedDate}</td>
+            <td>${entry}</td>
+            <td>${exit}</td>
+            <td>${descriptionInput}</td>
+            <td>${paymentMethodSelect}</td>
+          </tr>`;
 
           tableBody.append(row);
+
+          $(".total").show();
         });
+      }
+
+      function updateTotals() {
+        // Atualizar a exibição dos totais
+        $(".totalEntry").text(`${formatCurrency(totalEntry)}`);
+        $(".totalExit").text(`${formatCurrency(totalExit)}`);
       }
 
       function formatDate(rawDate) {
