@@ -79,7 +79,7 @@
 
   <script>
     $(document).ready(function () {
-      // Variáveis globais para os totais de entrada e saída
+
       let totalEntry = 0;
       let totalExit = 0;
 
@@ -104,6 +104,9 @@
       });
 
       function parseAndDisplay(ofxData) {
+        totalEntry = 0;
+        totalExit = 0;
+
         // Usar expressões regulares para extrair transações dos dados OFX
         const transactions = ofxData.match(/<STMTTRN>[\s\S]*?<\/STMTTRN>/g);
 
