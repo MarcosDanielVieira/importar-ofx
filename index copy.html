@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visualizador OFX</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- jQuery -->
+  <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+</head>
+
+<body>
+
+  <div class="container mt-5 mb-5">
+    <h2>Visualizador de Dados OFX</h2>
+    <input type="file" id="ofxFile" class="form-control mb-3" accept=".ofx">
+    <button class="btn btn-primary" id="importarBtn">Importar</button>
+
+    <div class="total" style="display: none;">
+      <div class="row mt-3 d-flex justify-content-end ">
+        <div class="col-md-2">
+          <div class="p-2 border bg-light text-success rounded">
+            <h6>Entrada</h6>
+            <b class="totalEntry"> </b>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="p-2 border bg-light text-danger rounded">
+            <h6>Saída</h6>
+            <b class="totalExit"> </b>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <form action="#" method="post">
+      <table class="table table-bordered mt-3">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Entrada</th>
+            <th>Saída</th>
+            <th>Descrição</th>
+            <th>Forma de Pagamento</th>
+          </tr>
+        </thead>
+        <tbody id="ofxTableBody">
+          <!-- As linhas da tabela serão adicionadas dinamicamente aqui -->
+        </tbody>
+        <tfoot class="footer-table" style="display: none;">
+          <tr>
+            <td colspan="5" class="text-end">
+              <div class="row mt-3 d-flex justify-content-end">
+                <div class="col-md-2">
+                  <div class="p-2 border bg-light text-success rounded">
+                    <h6>Total Entrada</h6>
+                    <b class="totalEntry"> </b>
+                  </div>
+                </div>
+                <div class="col-md-2">
+                  <div class="p-2 border bg-light text-danger rounded">
+                    <h6>Total Saída</h6>
+                    <b class="totalExit"> </b>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <button type="submit" class="btn btn-info btn_enviar" style="display: none;">
+        Enviar informações
+      </button>
+    </form>
+  </div>
+
+  <script>
+    $(document).ready(function () {
+
+      let totalEntry = 0;
+      let totalExit = 0;
+
+      $("#importarBtn").click(function () {
+        const fileInput = $("#ofxFile")[0];
+        const file = fileInput.files[0];
+
+        if (file) {
+          const reader = new FileReader();
+
+          reader.onload = function (e) {
+            const ofxData = e.target.result;
+            parseAndDisplay(ofxData);
+            updateTotals(); // Atualizar totais após importar
+            $(".btn_enviar").show();
+          };
+
+          reader.readAsText(file);
+        } else {
+          alert("Selecione um arquivo OFX válido.");
+        }
+      });
+
+      function parseAndDisplay(ofxData) {
+        totalEntry = 0;
+        totalExit = 0;
+
+        // Usar expressões regulares para extrair transações dos dados OFX
+        const transactions = ofxData.match(/<STMTTRN>[\s\S]*?<\/STMTTRN>/g);
+
+        const tableBody = $("#ofxTableBody");
+        tableBody.empty(); // Limpar linhas existentes
+
+        transactions.forEach(function (transaction) {
+          const rawDate = transaction.match(/<DTPOSTED>(.*?)<\/DTPOSTED>/)[1];
+          const formattedDate = formatDate(rawDate);
+          const type = transaction.match(/<TRNTYPE>(.*?)<\/TRNTYPE>/)[1];
+          const amount = parseFloat(transaction.match(/<TRNAMT>(.*?)<\/TRNAMT>/)[1]).toFixed(2);
+          const formattedAmount = formatCurrency(amount);
+          const memo = transaction.match(/<MEMO>(.*?)<\/MEMO>/)[1];
+
+          const inputEntry = `<input type="hidden" name="entry[]" value="${amount}">`;
+          const inputExit = `<input type="hidden" name="exit[]" value="${amount}">`;
+
+          const entry = type === 'CREDIT' ? formattedAmount + inputEntry : '';
+          const exit = (type === 'DEBIT' || type === 'PAYMENT') ? formattedAmount + inputExit : '';
+
+          // Atualizar totais de entrada e saída
+          if (type === 'CREDIT') {
+            totalEntry += parseFloat(amount);
+          } else if (type === 'DEBIT' || type === 'PAYMENT') {
+            totalExit += parseFloat(amount);
+          }
+
+          const classType = (type === 'DEBIT' || type === 'PAYMENT') ? 'bg-danger' : 'bg-success ';
+
+          const descriptionInput = `<input type="text" name="description[]" class="form-control" value="${memo}">`;
+          const dateInput = `<input type="hidden" name="date[]" value="${rawDate}">`;
+
+          const paymentMethodSelect =
+            `<select class="form-control" required>
+              <option value="">Selecione</option>
+              <option value="credit">Crédito</option>
+              <option value="debit">Débito</option>
+              <option value="money">Dinheiro</option>
+              <option value="pix">PIX</option>
+            </select>`;
+
+          const row = `
+          <tr class="${classType} bg-gradient text-white bg-opacity-75" >
+            <td>${dateInput} ${formattedDate}</td>
+            <td>${entry}</td>
+            <td>${exit}</td>
+            <td>${descriptionInput}</td>
+            <td>${paymentMethodSelect}</td>
+          </tr>`;
+
+          tableBody.append(row);
+
+          $(".total, .footer-table").show();
+        });
+
+        // Verificar se há mais de 4 linhas na tabela antes de exibir o footer
+        if ($("#ofxTableBody tr").length > 4) {
+          $(".footer-table").show();
+        } else {
+          $(".footer-table").hide();
+        }
+      }
+
+      function updateTotals() {
+        // Atualizar a exibição dos totais
+        $(".totalEntry").text(`${formatCurrency(totalEntry)}`);
+        $(".totalExit").text(`${formatCurrency(totalExit)}`);
+      }
+
+      function formatDate(rawDate) {
+        // Converter formato de data bruto para o formato desejado
+        const year = rawDate.substr(0, 4);
+        const month = rawDate.substr(4, 2);
+        const day = rawDate.substr(6, 2);
+
+        return `${day}/${month}/${year}`;
+      }
+
+      function formatCurrency(value) {
+        // Formatar o valor como moeda brasileira (R$)
+        return parseFloat(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      }
+    });
+  </script>
+
+  <!-- Bootstrap JS (opcional) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
